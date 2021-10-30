@@ -1,5 +1,14 @@
 {
     "dir":{
-        "models":"models/"
+        "models":"models/",
+        "Data":"Data/"
+    },
+    
+    "file":{
+        "clinical_data":"Resources/clinical_data.csv",
+        "train_subjects":"Resources/train_subjects.csv",
+        "test_subjects":"Resources/test_subjects.csv",
+        "train_data":"Resources/train_data.csv",
+        "test_data":"Resources/test_data.csv"
     }
 }
