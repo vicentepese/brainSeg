@@ -13,7 +13,7 @@
     },
 
     "param":{
-        "batch_size":16,
+        "batch_size":8,
         "n_epochs":100,
         "learning_rate":1e-3
     }
