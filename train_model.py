@@ -1,15 +1,17 @@
 from os import path
+from utils.utils import show, jackarIndex   
+from PIL import Image
+from tqdm import tqdm
 import numpy as np 
 import pandas as pd 
 import json 
-
-from PIL import Image
 
 import torch 
 from torch.utils.data import DataLoader, Dataset, dataloader
 from torch import nn 
 
 from torchvision import transforms
+import torchvision.transforms.functional as F
 import torchvision
 class BrainDataset(Dataset):
     
@@ -17,25 +19,30 @@ class BrainDataset(Dataset):
         
         if train:
             self.path_to_data = settings["file"]["train_data"]
-            self.data_list = list(pd.read_csv(self.path_to_data))
+            self.data_list = list(pd.read_csv(self.path_to_data, sep='\n', header=None)[0])
         else:
             self.path_to_data = settings["file"]["test_data"]
-            self.data_list = list(pd.read_csv(self.path_to_data))            
+            self.data_list = list(pd.read_csv(self.path_to_data, sep='\n', header=None)[0])            
         self.train_status = train
         self.transform = transform
         
     def __len__(self):
         return len(self.data_list)
     
-    def __getitem__(self, index:int) -> dict:
+    def __getitem__(self, index:int):
         path_to_img = self.data_list[index]
         img = Image.open(path_to_img + ".tif")
-        target = transforms.PILToTensor()(Image.open(path_to_img + "_mask.tif"))
+        target = transforms.PILToTensor()(Image.open(path_to_img + "_mask.tif")).float()
         
         if self.transform:
             img = self.transform(img)
             
-        return img, target
+        item = {
+            'img':img,
+            'target':target
+        }
+            
+        return item
 
 def main():
     
@@ -73,23 +80,28 @@ def main():
     loss_train, loss_test, acc_train, acc_test = [], [], [], []
     
     # Train model 
-    for _ in range(settings["param"]["n_epochs"]):
+    for _ in tqdm(range(settings["param"]["n_epochs"])):
         model.train()
         loss_e, acc_e = [], []
-        for img, target in train_dataloader:
+        for item in train_dataloader:
             
-            img, target = img.to(device), target.to(device)
+            # img, target = img.to(device), target.to(device)
+            img = item['img'].to(device)
+            target = item['target'].to(device)
             
             # Forward pass 
             out = model(img)
             out = out['out']
             
+            # Normalize output and convert to label
+            norm_out = torch.nn.functional.softmax(out, dim =1)
+            
             # Compute loss 
-            loss = loss_func(out.data, target)
+            loss = loss_func(norm_out, target)
             
             # Append loss and accuracy 
             loss_e += [loss.cpu().detach().numpy()]
-            # acc_e += [compute_acc(out, target)]
+            # acc_e += [jackarIndex(norm_out.cpu().detach(), target.cpu().detach())]
             
             # Compute derivatives
             optimizer.zero_grad()
@@ -99,11 +111,12 @@ def main():
             optimizer.step()
             
         # Append to global list 
-        loss_train.append(np.mean(loss_e)); acc_train.append(np.mean(acc_e))
+        loss_train.append(np.mean(loss_e))
+        # acc_train.append(np.mean(acc_e))
             
         # Verbose 
         print("Training Accuracy:" + str(loss_train[-1]))    
-        print("Training Loss:" + str(acc_train[-1]))
+        # print("Training Loss:" + str(acc_train[-1]))
             
             
             
