@@ -52,7 +52,8 @@ def main():
         
     # Set random seed and device
     np.random.seed(1984)
-    device = 'cuda:0' if torch.cuda.is_available() else "cpu"
+    torch.manual_seed(1984)
+    device = 'cuda' if torch.cuda.is_available() else "cpu"
     
     # Create the transform
     transform = transforms.Compose([transforms.ToTensor(), 
@@ -115,8 +116,8 @@ def main():
         # acc_train.append(np.mean(acc_e))
             
         # Verbose 
-        print("Training Accuracy:" + str(loss_train[-1]))    
-        # print("Training Loss:" + str(acc_train[-1]))
+        print("Training Loss:" + str(loss_train[-1]))    
+        # print("Training Accuracy:" + str(acc_train[-1]))
             
             
             
